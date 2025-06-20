@@ -12,6 +12,7 @@
             border-collapse: collapse;
             width: 70%;
             margin: 0 auto;
+            display: none; /* Скрыто по умолчанию */
         }
         #todoList th, #todoList td {
             border: 1px solid #ddd;
@@ -25,7 +26,10 @@
             width: 5%;
         }
         #todoList th:nth-child(2) {
-            width: 90%;
+            width: 80%;
+        }
+        #todoList th:nth-child(3) {
+            width: 15%;
         }
         .add-form {
             margin-top: 20px;
@@ -40,11 +44,28 @@
             padding: 8px;
             width: 20%;
         }
+        #login-form {
+            width: 70%;
+            margin: 20px auto;
+            display: block;
+        }
+        #login-form input {
+            padding: 8px;
+            margin-right: 10px;
+        }
+        #login-form button {
+            padding: 8px;
+        }
     </style>
 </head>
 <body>
-
 <h2 style="text-align: center;">To-Do List</h2>
+
+<div id="login-form">
+    <input type="text" id="username" placeholder="Username">
+    <input type="password" id="password" placeholder="Password">
+    <button onclick="login()">Login</button>
+</div>
 
 <table id="todoList">
     <thead>
@@ -59,7 +80,7 @@
     </tbody>
 </table>
 
-<div class="add-form">
+<div class="add-form" id="add-form">
     <input type="text" id="newItem" placeholder="Enter new item">
     <button onclick="addItem()">Add</button>
 </div>
@@ -67,6 +88,32 @@
 <script>
     let items = [];
     let nextId = 1;
+
+    // Проверка авторизации при загрузке
+    if (!localStorage.getItem('isAuthenticated')) {
+        document.getElementById('todoList').style.display = 'none';
+        document.getElementById('add-form').style.display = 'none';
+    } else {
+        document.getElementById('todoList').style.display = 'block';
+        document.getElementById('add-form').style.display = 'block';
+        document.getElementById('login-form').style.display = 'none';
+    }
+
+    function login() {
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+
+        // Простая проверка (замените на реальную логику)
+        if (username === 'user' && password === 'pass') {
+            localStorage.setItem('isAuthenticated', 'true');
+            document.getElementById('todoList').style.display = 'block';
+            document.getElementById('add-form').style.display = 'block';
+            document.getElementById('login-form').style.display = 'none';
+            alert('Успешная авторизация!');
+        } else {
+            alert('Неверный логин или пароль!');
+        }
+    }
 
     function renderList() {
         const listBody = document.getElementById('listBody');
@@ -77,7 +124,10 @@
             row.innerHTML = `
                 <td>${index + 1}</td>
                 <td>${item.text}</td>
-                <td><button onclick="removeItem(${index})">Remove</button></td>
+                <td>
+                    <button onclick="removeItem(${index})">Remove</button>
+                    <button onclick="editItem(${index})">Edit</button>
+                </td>
             `;
             listBody.appendChild(row);
         });
@@ -98,7 +148,18 @@
         items.splice(index, 1);
         renderList();
     }
-</script>
 
+    function editItem(index) {
+        const newText = prompt('Edit item:', items[index].text);
+        if (newText && newText.trim()) {
+            items[index].text = newText.trim();
+            renderList();
+            alert('Элемент отредактирован!');
+        }
+    }
+
+    // Инициализация списка при загрузке
+    renderList();
+</script>
 </body>
 </html>
