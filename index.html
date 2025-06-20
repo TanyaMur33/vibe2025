@@ -7,11 +7,13 @@
     <style>
         body {
             font-family: Arial, sans-serif;
+            background-color: #f5f5f5; /* Изменение из feature/add-items */
         }
         #todoList {
             border-collapse: collapse;
             width: 70%;
             margin: 0 auto;
+            display: none; /* Изменение из feature/authentication */
         }
         #todoList th, #todoList td {
             border: 1px solid #ddd;
@@ -25,7 +27,10 @@
             width: 5%;
         }
         #todoList th:nth-child(2) {
-            width: 90%;
+            width: 80%;
+        }
+        #todoList th:nth-child(3) {
+            width: 15%;
         }
         .add-form {
             margin-top: 20px;
@@ -39,12 +44,38 @@
         .add-form button {
             padding: 8px;
             width: 20%;
+            background-color: #4CAF50; /* Изменение из feature/add-items */
+        }
+        #login-form {
+            width: 70%;
+            margin: 20px auto;
+            display: block;
+        }
+        #login-form input {
+            padding: 8px;
+            margin-right: 10px;
+        }
+        #login-form button {
+            padding: 8px;
+        }
+        button {
+            background-color: #ff4444; /* Изменение из feature/remove-items */
         }
     </style>
+    <!-- Комментарий для ветки feature/add-items -->
+    <!-- Комментарий для ветки feature/remove-items -->
+    <!-- Комментарий для ветки feature/edit-items -->
+    <!-- Комментарий для ветки feature/authentication -->
+    <!-- Комментарий для ветки feature/telegram-integration -->
 </head>
 <body>
-
 <h2 style="text-align: center;">To-Do List</h2>
+
+<div id="login-form">
+    <input type="text" id="username" placeholder="Username">
+    <input type="password" id="password" placeholder="Password">
+    <button onclick="login()">Login</button>
+</div>
 
 <table id="todoList">
     <thead>
@@ -59,7 +90,7 @@
     </tbody>
 </table>
 
-<div class="add-form">
+<div class="add-form" id="add-form">
     <input type="text" id="newItem" placeholder="Enter new item">
     <button onclick="addItem()">Add</button>
 </div>
@@ -67,6 +98,32 @@
 <script>
     let items = [];
     let nextId = 1;
+
+    // Проверка авторизации при загрузке (из feature/authentication)
+    if (!localStorage.getItem('isAuthenticated')) {
+        document.getElementById('todoList').style.display = 'none';
+        document.getElementById('add-form').style.display = 'none';
+    } else {
+        document.getElementById('todoList').style.display = 'block';
+        document.getElementById('add-form').style.display = 'block';
+        document.getElementById('login-form').style.display = 'none';
+    }
+
+    function login() {
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+
+        // ВАШИ ДАННЫЕ: Замените 'user' и 'pass' на свои логин и пароль
+        if (username === 'user' && password === 'pass') {
+            localStorage.setItem('isAuthenticated', 'true');
+            document.getElementById('todoList').style.display = 'block';
+            document.getElementById('add-form').style.display = 'block';
+            document.getElementById('login-form').style.display = 'none';
+            alert('Успешная авторизация!');
+        } else {
+            alert('Неверный логин или пароль!');
+        }
+    }
 
     function renderList() {
         const listBody = document.getElementById('listBody');
@@ -77,7 +134,10 @@
             row.innerHTML = `
                 <td>${index + 1}</td>
                 <td>${item.text}</td>
-                <td><button onclick="removeItem(${index})">Remove</button></td>
+                <td>
+                    <button onclick="removeItem(${index})">Remove</button>
+                    <button onclick="editItem(${index})">Edit</button>
+                </td>
             `;
             listBody.appendChild(row);
         });
@@ -91,14 +151,72 @@
             items.push({ id: nextId++, text: newItemText });
             newItemInput.value = '';
             renderList();
+
+            // Интеграция с Telegram (из feature/telegram-integration)
+            const botToken = '7585430757:AAHEWw1MI3AOCUOgdBxqg6Vcc_aRDDcO9kg';
+            const chatId = '1187167537'; 
+            const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
+            const message = `Новый элемент: ${newItemText}`;
+            fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chat_id: chatId,
+                    text: message
+                })
+            }).catch(error => console.log('Ошибка отправки в Telegram:', error));
+            alert('Элемент добавлен!'); // Изменение из feature/add-items
         }
     }
 
     function removeItem(index) {
-        items.splice(index, 1);
-        renderList();
-    }
-</script>
+        if (confirm('Удалить элемент?')) { // Изменение из feature/remove-items
+            const removedItem = items[index].text;
+            items.splice(index, 1);
+            renderList();
 
+            // Интеграция с Telegram при удалении
+            const botToken = '7585430757:AAHEWw1MI3AOCUOgdBxqg6Vcc_aRDDcO9kg'; // ВАШИ ДАННЫЕ: Замените на токен вашего бота
+            const chatId = '1187167537'; // ВАШИ ДАННЫЕ: Замените на ID вашего чата
+            const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
+            const message = `Удалён элемент: ${removedItem}`;
+            fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chat_id: chatId,
+                    text: message
+                })
+            }).catch(error => console.log('Ошибка отправки в Telegram:', error));
+            alert('Элемент удалён!'); // Изменение из feature/remove-items
+        }
+    }
+
+    function editItem(index) {
+        const newText = prompt('Edit item:', items[index].text);
+        if (newText && newText.trim()) {
+            const oldText = items[index].text;
+            items[index].text = newText.trim();
+            renderList();
+
+            // Интеграция с Telegram при редактировании
+            const botToken = '7585430757:AAHEWw1MI3AOCUOgdBxqg6Vcc_aRDDcO9kg'; // ВАШИ ДАННЫЕ: Замените на токен вашего бота
+            const chatId = '1187167537'; // ВАШИ ДАННЫЕ: Замените на ID вашего чата
+            const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
+            const message = `Элемент изменён: ${oldText} → ${newText}`;
+            fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chat_id: chatId,
+                    text: message
+                })
+            }).catch(error => console.log('Ошибка отправки в Telegram:', error));
+            alert('Элемент отредактирован!'); // Изменение из feature/edit-items
+        }
+    }
+
+    renderList();
+</script>
 </body>
 </html>
